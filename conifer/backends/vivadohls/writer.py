@@ -7,20 +7,20 @@ def write(ensemble_dict, cfg):
 
     filedir = os.path.dirname(os.path.abspath(__file__))
 
-    os.makedirs('{}/firmware'.format(cfg['OutputDir']))
-    os.makedirs('{}/tb_data'.format(cfg['OutputDir']))
-    copyfile('{}/firmware/BDT.h'.format(filedir), '{}/firmware/BDT.h'.format(cfg['OutputDir']))
+    os.makedirs('{0}/firmware'.format(cfg['OutputDir']))
+    os.makedirs('{0}/tb_data'.format(cfg['OutputDir']))
+    copyfile('{0}/firmware/BDT.h'.format(filedir), '{0}/firmware/BDT.h'.format(cfg['OutputDir']))
 
     ###################
     ## myproject.cpp
     ###################
 
-    fout = open('{}/firmware/{}.cpp'.format(cfg['OutputDir'], cfg['ProjectName']),'w')
+    fout = open('{0}/firmware/{1}.cpp'.format(cfg['OutputDir'], cfg['ProjectName']),'w')
     fout.write('#include "BDT.h"\n')
     fout.write('#include "parameters.h"\n')
-    fout.write('#include "{}.h"\n'.format(cfg['ProjectName']))
+    fout.write('#include "{0}.h"\n'.format(cfg['ProjectName']))
 
-    fout.write('void {}(input_arr_t x, score_arr_t score, score_t tree_scores[BDT::fn_classes(n_classes) * n_trees]){{\n'.format(cfg['ProjectName']))
+    fout.write('void {0}(input_arr_t x, score_arr_t score, score_t tree_scores[BDT::fn_classes(n_classes) * n_trees]){{\n'.format(cfg['ProjectName']))
     fout.write('\t#pragma HLS array_partition variable=x\n')
     fout.write('\t#pragma HLS array_partition variable=score\n')
     fout.write('\t#pragma HLS pipeline\n')
@@ -32,17 +32,17 @@ def write(ensemble_dict, cfg):
     ## parameters.h
     ###################
 
-    fout = open('{}/firmware/parameters.h'.format(cfg['OutputDir']),'w')
+    fout = open('{0}/firmware/parameters.h'.format(cfg['OutputDir']),'w')
     fout.write('#ifndef BDT_PARAMS_H__\n#define BDT_PARAMS_H__\n\n')
     fout.write('#include  "BDT.h"\n')
     fout.write('#include "ap_fixed.h"\n\n')
-    fout.write('static const int n_trees = {};\n'.format(ensemble_dict['n_trees']))
-    fout.write('static const int max_depth = {};\n'.format(ensemble_dict['max_depth']))
-    fout.write('static const int n_features = {};\n'.format(ensemble_dict['n_features']))
-    fout.write('static const int n_classes = {};\n'.format(ensemble_dict['n_classes']))
-    fout.write('typedef {} input_t;\n'.format(cfg['Precision']))
+    fout.write('static const int n_trees = {0};\n'.format(ensemble_dict['n_trees']))
+    fout.write('static const int max_depth = {0};\n'.format(ensemble_dict['max_depth']))
+    fout.write('static const int n_features = {0};\n'.format(ensemble_dict['n_features']))
+    fout.write('static const int n_classes = {0};\n'.format(ensemble_dict['n_classes']))
+    fout.write('typedef {0} input_t;\n'.format(cfg['Precision']))
     fout.write('typedef input_t input_arr_t[n_features];\n')
-    fout.write('typedef {} score_t;\n'.format(cfg['Precision']))
+    fout.write('typedef {0} score_t;\n'.format(cfg['Precision']))
     fout.write('typedef score_t score_arr_t[n_classes];\n')
     # TODO score_arr_t
     fout.write('typedef input_t threshold_t;\n\n')
@@ -99,14 +99,14 @@ def write(ensemble_dict, cfg):
     #######################
 
     f = open(os.path.join(filedir,'hls-template/firmware/myproject.h'),'r')
-    fout = open('{}/firmware/{}.h'.format(cfg['OutputDir'], cfg['ProjectName']),'w')
+    fout = open('{0}/firmware/{0}.h'.format(cfg['OutputDir'], cfg['ProjectName']),'w')
 
     for line in f.readlines():
 
         if 'MYPROJECT' in line:
             newline = line.replace('MYPROJECT',format(cfg['ProjectName'].upper()))
         elif 'void myproject(' in line:
-            newline = 'void {}(\n'.format(cfg['ProjectName'])
+            newline = 'void {0}(\n'.format(cfg['ProjectName'])
         elif 'hls-fpga-machine-learning insert args' in line:
             newline = '\tinput_arr_t data,\n\tscore_arr_t score,\n\tscore_t tree_scores[BDT::fn_classes(n_classes) * n_trees]);'
         # Remove some lines
@@ -123,7 +123,7 @@ def write(ensemble_dict, cfg):
     #######################
 
     f = open(os.path.join(filedir, 'hls-template/myproject_test.cpp'))
-    fout = open('{}/{}_test.cpp'.format(cfg['OutputDir'], cfg['ProjectName']),'w')
+    fout = open('{0}/{0}_test.cpp'.format(cfg['OutputDir'], cfg['ProjectName']),'w')
 
     for line in f.readlines():
         indent = ' ' * (len(line) - len(line.lstrip(' ')))
@@ -136,39 +136,39 @@ def write(ensemble_dict, cfg):
             newline += '      std::vector<float>::const_iterator in_begin = in.cbegin();\n'
             newline += '      std::vector<float>::const_iterator in_end;\n'
             newline += '      input_arr_t x;\n'
-            newline += '      in_end = in_begin + ({});\n'.format(ensemble_dict['n_features'])
+            newline += '      in_end = in_begin + ({0});\n'.format(ensemble_dict['n_features'])
             newline += '      std::copy(in_begin, in_end, x);\n'
             newline += '      in_begin = in_end;\n'
             # brace-init zeros the array out because we use std=c++0x
             newline += '      score_arr_t score{};\n'
             newline += '      score_t tree_scores[BDT::fn_classes(n_classes) * n_trees]{};\n'
             # but we can still explicitly zero out if you want
-            newline += '      std::fill_n(score, {}, 0.);\n'.format(ensemble_dict['n_classes'])
+            newline += '      std::fill_n(score, {0}, 0.);\n'.format(ensemble_dict['n_classes'])
         elif '//hls-fpga-machine-learning insert zero' in line:
             newline = line
             newline += '    input_arr_t x;\n'
-            newline += '    std::fill_n(x, {}, 0.);\n'.format(ensemble_dict['n_features'])
+            newline += '    std::fill_n(x, {0}, 0.);\n'.format(ensemble_dict['n_features'])
             newline += '    score_arr_t score{};\n'
             newline += '    score_t tree_scores[BDT::fn_classes(n_classes) * n_trees]{};\n'
-            newline += '    std::fill_n(score, {}, 0.);\n'.format(ensemble_dict['n_classes'])
+            newline += '    std::fill_n(score, {0}, 0.);\n'.format(ensemble_dict['n_classes'])
         elif '//hls-fpga-machine-learning insert top-level-function' in line:
             newline = line
-            top_level = indent + '{}(x, score, tree_scores);\n'.format(cfg['ProjectName'])
+            top_level = indent + '{0}(x, score, tree_scores);\n'.format(cfg['ProjectName'])
             newline += top_level
         elif '//hls-fpga-machine-learning insert predictions' in line:
             newline = line
-            newline += indent + 'for(int i = 0; i < {}; i++) {{\n'.format(ensemble_dict['n_classes'])
+            newline += indent + 'for(int i = 0; i < {0}; i++) {{\n'.format(ensemble_dict['n_classes'])
             newline += indent + '  std::cout << pr[i] << " ";\n'
             newline += indent + '}\n'
             newline += indent + 'std::cout << std::endl;\n'
         elif '//hls-fpga-machine-learning insert tb-output' in line:
             newline = line
-            newline += indent + 'for(int i = 0; i < {}; i++) {{\n'.format(ensemble_dict['n_classes'])
+            newline += indent + 'for(int i = 0; i < {0}; i++) {{\n'.format(ensemble_dict['n_classes'])
             newline += indent + '  fout << score[i] << " ";\n'
             newline += indent + '}\n'
         elif '//hls-fpga-machine-learning insert output' in line or '//hls-fpga-machine-learning insert quantized' in line:
             newline = line
-            newline += indent + 'for(int i = 0; i < {}; i++) {{\n'.format(ensemble_dict['n_classes'])
+            newline += indent + 'for(int i = 0; i < {0}; i++) {{\n'.format(ensemble_dict['n_classes'])
             newline += indent + '  std::cout << score[i] << " ";\n'
             newline += indent + '}\n'
             newline += indent + 'std::cout << std::endl;\n'
@@ -199,7 +199,7 @@ def write(ensemble_dict, cfg):
     relpath = os.path.relpath(bdtdir, start=cfg['OutputDir'])
 
     f = open(os.path.join(filedir,'hls-template/build_prj.tcl'),'r')
-    fout = open('{}/build_prj.tcl'.format(cfg['OutputDir']),'w')
+    fout = open('{0}/build_prj.tcl'.format(cfg['OutputDir']),'w')
 
     for line in f.readlines():
 
@@ -209,9 +209,9 @@ def write(ensemble_dict, cfg):
         #if 'set_top' in line:
         #    line = line.replace('myproject', '{}_decision_function'.format(cfg['ProjectName']))
         if 'set_part {xc7vx690tffg1927-2}' in line:
-            line = 'set_part {{{}}}\n'.format(cfg['XilinxPart'])
+            line = 'set_part {{{0}}}\n'.format(cfg['XilinxPart'])
         elif 'create_clock -period 5 -name default' in line:
-            line = 'create_clock -period {} -name default\n'.format(cfg['ClockPeriod'])
+            line = 'create_clock -period {0} -name default\n'.format(cfg['ClockPeriod'])
         # Remove some lines
         elif ('weights' in line) or ('-tb firmware/weights' in line):
             line = ''
@@ -231,7 +231,7 @@ def auto_config():
     return config
 
 def decision_function(X, config, trees=False):
-    np.savetxt('{}/tb_data/tb_input_features.dat'.format(config['OutputDir']),
+    np.savetxt('{0}/tb_data/tb_input_features.dat'.format(config['OutputDir']),
                X, delimiter=",", fmt='%10f')
     cwd = os.getcwd()
     os.chdir(config['OutputDir'])
